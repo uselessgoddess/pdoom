@@ -78,3 +78,32 @@ unsafe extern "C" fn atof(str: *const c_char) -> c_float {
     // TODO: no satisfy standard libc behaviour
     CStr::from_ptr(str).to_string_lossy().parse::<c_float>().unwrap_or(0.0)
 }
+
+#[no_mangle]
+unsafe extern "C" fn printf(str: *const c_char, ...) {
+    puts(str);
+}
+
+#[no_mangle]
+unsafe extern "C" fn puts(str: *const c_char) {
+    log::info!("{}", CStr::from_ptr(str).to_string_lossy());
+}
+
+#[no_mangle]
+extern "C" fn putchar(c: c_int) {
+    if let Ok(c) = char::try_from(c as u32) {
+        log::info!("{c}")
+    } else {
+        log::info!("#");
+    }
+}
+
+#[no_mangle]
+unsafe extern "C" fn cpu_time_us() -> u64 {
+    x86::time::rdtsc() / 50000
+}
+
+#[no_mangle]
+unsafe extern "C" fn sqrtf(f: f32) -> f32 {
+    core::intrinsics::sqrtf32(f)
+}

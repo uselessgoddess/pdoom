@@ -1,20 +1,21 @@
 #![no_std]
 #![no_main]
-#![feature(const_mut_refs, slice_internals, iter_order_by, c_variadic, slice_ptr_len)]
+#![feature(
+    const_mut_refs,
+    slice_internals,
+    iter_order_by,
+    c_variadic,
+    slice_ptr_len,
+    core_intrinsics
+)]
 
 mod alloc;
-mod doom;
 mod libc;
 
 use {
     bootloader_api::{entry_point, BootInfo, BootloaderConfig},
     bootloader_boot_config::LevelFilter,
-    core::{
-        ffi::{c_char, c_int, CStr},
-        fmt::Write,
-        panic::PanicInfo,
-    },
-    log::log,
+    core::{fmt::Write, panic::PanicInfo},
 };
 
 pub const CONFIG: BootloaderConfig = {
@@ -23,12 +24,26 @@ pub const CONFIG: BootloaderConfig = {
     config
 };
 
-#[link(name = "doom")]
+mod pic {
+    use {pic8259::ChainedPics, spin::Mutex};
+
+    pub const PIC_1_OFFSET: u8 = 32;
+    pub const PIC_2_OFFSET: u8 = PIC_1_OFFSET + 8;
+
+    pub static PICS: Mutex<ChainedPics> =
+        Mutex::new(unsafe { ChainedPics::new(PIC_1_OFFSET, PIC_2_OFFSET) });
+
+    pub fn init() {}
+}
+
+#[link(name = "render")]
 extern "C" {
     fn kernel_main(ptr: *mut u8, len: u32);
 }
 
 fn kernel_entry(info: &'static mut BootInfo) -> ! {
+    pic::init();
+
     unsafe {
         alloc::ALLOC.init();
 
@@ -55,24 +70,5 @@ fn panic(info: &PanicInfo) -> ! {
     log::error!("{info}");
     loop {
         unsafe { core::arch::asm!("cli; hlt") };
-    }
-}
-
-#[no_mangle]
-unsafe extern "C" fn printf(str: *const c_char, ...) {
-    puts(str);
-}
-
-#[no_mangle]
-unsafe extern "C" fn puts(str: *const c_char) {
-    log::info!("{}", CStr::from_ptr(str).to_string_lossy());
-}
-
-#[no_mangle]
-extern "C" fn putchar(c: c_int) {
-    if let Ok(c) = char::try_from(c as u32) {
-        log::info!("{c}")
-    } else {
-        log::info!("#");
     }
 }
