@@ -4,6 +4,7 @@
 #include "std/span"
 #include "vec.h"
 #include "rand.h"
+#include "model.h"
 
 using std::uint64_t;
 using std::uint32_t;
@@ -75,14 +76,34 @@ extern "C" void kernel_main(uint8_t *buf, uint32_t len) {
 
     float y = 1.0 / 0;
 
-    while (true) {
-        frame.triangle({static_cast<int>(M_Random() * WIDTH / 255), static_cast<int>(M_Random() * HEIGHT / 255)},
-                       {static_cast<int>(M_Random() * WIDTH / 255), static_cast<int>(M_Random() * HEIGHT / 255)},
-                       {static_cast<int>(M_Random() * WIDTH / 255), static_cast<int>(M_Random() * HEIGHT / 255)},
-                       {(uint8_t) M_Random(), (uint8_t) M_Random(), (uint8_t) M_Random()});
+    auto model = load_elemental();
 
+    auto light_dir = vec3f{0, 0, -1};
+    while (true) {
+
+        for (size_t i = 0; i < model.triangles_len; i++) {
+            auto triangle = model.triangles[i];
+
+            vec2i screen_coords[3];
+            vec3f world_coords[3];
+            for (int j = 0; j < 3; j++) {
+                auto world = triangle.vertices[j].position;
+                screen_coords[j] = vec2i{int32_t((world[0] + 1.0) * WIDTH / 2.0),
+                                         int32_t((world[1] + 1.0) * HEIGHT / 2.0)};
+                world_coords[j] = {world[0], world[1], world[2]};
+            }
+
+            vec3f n = (world_coords[2] - world_coords[0]) ^ (world_coords[1] - world_coords[0]);
+            float intensity = light_dir * n.normalize();
+            if (intensity > 0) {
+                frame.triangle(screen_coords[0], screen_coords[1], screen_coords[2],
+                               {uint8_t(intensity * 255), uint8_t(intensity * 255), uint8_t(intensity * 255)});
+            }
+        }
 
         std::copy(place, place + len, buf);
+
+        break;
 
         // doom_key_down(DOOM_KEY_ENTER);
         // doom_key_up(DOOM_KEY_ENTER);

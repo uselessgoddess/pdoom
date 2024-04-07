@@ -8,9 +8,11 @@
     slice_ptr_len,
     core_intrinsics
 )]
+#![feature(vec_into_raw_parts)]
 
 mod alloc;
 mod libc;
+mod model;
 
 use {
     bootloader_api::{entry_point, BootInfo, BootloaderConfig},

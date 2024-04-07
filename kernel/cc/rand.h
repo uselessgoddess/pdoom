@@ -24,7 +24,7 @@ int	rndindex = 0;
 int	prndindex = 0;
 
 // Which one is deterministic?
-int M_Random (void)
+uint8_t M_Random (void)
 {
     prndindex = (prndindex+1)&0xff;
     return rndtable[prndindex];
