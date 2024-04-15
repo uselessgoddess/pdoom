@@ -1,5 +1,5 @@
 [workspace]
-members = ["kernel"]
+members = [ "image","kernel"]
 
 [package]
 name = "os"

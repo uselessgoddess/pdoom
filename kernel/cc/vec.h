@@ -66,6 +66,12 @@ template<typename T>
 struct vec<T, 2> {
     T x, y;
 
+    template<typename U>
+    constexpr vec(vec<U, 2> v) : x(v[0]), y(v[1]) {}
+
+    constexpr vec() = default;
+    constexpr vec(T x, T y) : x(x), y(y) {}
+
     constexpr T &operator[](size_t idx) {
         return idx ? y : x;
     }
@@ -78,6 +84,15 @@ struct vec<T, 2> {
 template<typename T>
 struct vec<T, 3> {
     T x, y, z;
+
+    template<typename U>
+    constexpr vec(vec<U, 2> v) : x(v[0]), y(v[1]), z(0) {}
+
+    template<typename U>
+    constexpr vec(vec<U, 3> v) : x(v[0]), y(v[1]), z(v[2]) {}
+
+    constexpr vec() = default;
+    constexpr vec(T x, T y, T z) : x(x), y(y), z(z) {}
 
     constexpr T &operator[](size_t idx) {
         return idx ? (1 == idx ? y : z) : x;
@@ -105,5 +120,7 @@ struct vec<T, 3> {
 };
 
 using vec2i = vec<int32_t, 2>;
+using vec3i = vec<int32_t, 3>;
 using vec2f = vec<f32, 2>;
 using vec3f = vec<f32, 3>;
+
