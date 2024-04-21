@@ -20,16 +20,16 @@ struct Texture {
     [[nodiscard]] auto get(size_t x, size_t y) const -> Rgb {
         auto idx = (y * width + x) * 3;
         return {
-            uint8_t (ptr[idx + 0] + (M_Random() % 200)),
-            uint8_t (ptr[idx + 1] + (M_Random() % 200)),
-            uint8_t (ptr[idx + 2] + (M_Random() % 200)),
+            uint8_t (ptr[idx + 0]),
+            uint8_t (ptr[idx + 1]),
+            uint8_t (ptr[idx + 2]),
         };
     }
 
     [[nodiscard]] auto uv(vec3f uv) const {
-        uv.x = (1.0 - uv.x);
-        uv.y = (1.0 - uv.y);
-        return vec2i(uv.x * width, uv.y * height);
+        uv->x = (float_t(1.0) - uv->x);
+        uv->y = (float_t(1.0) - uv->y);
+        return vec2i(uv->x * float_t(width), uv->y * float_t(height));
     }
 };
 

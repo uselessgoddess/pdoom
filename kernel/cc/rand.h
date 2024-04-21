@@ -23,6 +23,8 @@ static const unsigned char rndtable[256] = {
 int	rndindex = 0;
 int	prndindex = 0;
 
+extern "C" uint64_t cpu_time_us();
+
 // Which one is deterministic?
 uint8_t M_Random (void)
 {
