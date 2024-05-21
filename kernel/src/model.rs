@@ -64,7 +64,7 @@ macro_rules! define_model {
 }
 
 define_model!(
-    obj: "../assets/niger.obj"
-    texture: "../assets/niger.tga"
+    obj: "../assets/flanker_fix.obj"
+    texture: "../assets/flanker.jpg"
     => load_elemental
 );

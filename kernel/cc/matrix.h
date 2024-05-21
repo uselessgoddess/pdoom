@@ -104,12 +104,21 @@ struct matrix {
 
   constexpr matrix(auto... args)
     requires(sizeof...(args) == R * C)
-  {
-    auto in_place = std::array<T, R * C>{T(args)...};
-    auto trans = *(reinterpret_cast<storage<T, C, R> *>(&in_place));
+      : matrix(std::array<T, R * C>{T(args)...}) {}
+
+  constexpr explicit matrix(std::array<T, R * C> args) {
+    auto trans = *(reinterpret_cast<storage<T, C, R> *>(&args));
     for (size_t i = 0; i < R; i++) {
       for (size_t j = 0; j < C; j++) {
         repr[j][i] = trans[i][j];
+      }
+    }
+  }
+
+  constexpr explicit matrix(std::array<matrix<T, C, 1>, R> args) {
+    for (size_t i = 0; i < R; i++) {
+      for (size_t j = 0; j < C; j++) {
+        repr[j][i] = args[i][j];
       }
     }
   }
@@ -128,6 +137,10 @@ struct matrix {
 
   auto operator[](size_t idx) const -> const T & {
     return repr_ptr()[idx];
+  }
+
+  [[nodiscard]] constexpr auto shape() const -> std::array<size_t, 2> {
+    return {R, C};
   }
 
   [[nodiscard]] constexpr auto strides() const -> std::array<size_t, 2> {
@@ -158,6 +171,54 @@ struct matrix {
   }
   [[nodiscard]] constexpr auto &&repr_iter() const {
     return reinterpret_cast<const std::array<T, R * C> &>(repr);
+  }
+
+  static constexpr auto identity() -> matrix {
+    matrix ret;
+    for (size_t i = R; i--;) {
+      for (size_t j = C; j--;) {
+        ret[i, j] = (i == j);
+      }
+    }
+    return ret;
+  }
+
+  constexpr void set_col(size_t idx, matrix<T, R, 1> place) {
+    for (size_t i = 0; i < R; i++) {
+      (*this)[i, idx] = place[i];
+    }
+  }
+  constexpr void set_row(size_t idx, matrix<T, C, 1> place) {
+    for (size_t i = 0; i < C; i++) {
+      (*this)[idx, i] = place[i];
+    }
+  }
+
+  [[nodiscard]] constexpr auto col(size_t idx) const -> matrix<T, R, 1> {
+    matrix<T, R, 1> place = {};
+
+    for (size_t i = 0; i < R; i++) {
+      place[i, 0] = (*this)[i, idx];
+    }
+    return place;
+  }
+  [[nodiscard]] constexpr auto row(size_t idx) const -> matrix<T, C, 1> {
+    matrix<T, C, 1> place = {};
+
+    for (size_t i = 0; i < C; i++) {
+      place[i, 0] = (*this)[idx, i];
+    }
+    return place;
+  }
+
+  [[nodiscard]] constexpr auto transpose() const -> matrix<T, C, R> {
+    matrix<T, C, R> place;
+    for (size_t i = 0; i < R; i++) {
+      for (size_t j = 0; j < C; j++) {
+        place[j, i] = (*this)[i, j];
+      }
+    }
+    return place;
   }
 
   [[nodiscard]] constexpr auto cross(const matrix &v2) const
@@ -239,6 +300,49 @@ struct matrix {
     }
     return self;
   }
+
+  auto invert_transpose() const -> matrix {
+    matrix ret = adjugate();
+    return ret / (ret.row(0).dot(row(0)));
+  }
+
+  auto adjugate() const -> matrix {
+    matrix ret;
+    for (int i = R; i--;) {
+      for (int j = C; j--;) {
+        ret[i, j] = cofactor(i, j);
+      }
+    }
+    return ret;
+  }
+
+  auto cofactor(const int row, const int col) const -> T {
+    return minor(row, col).det() * ((row + col) % 2 ? -1 : 1);
+  }
+
+  auto minor(const int row, const int col) const -> matrix<T, R - 1, C - 1> {
+    matrix<T, R - 1, C - 1> ret;
+    for (int i = R - 1; i--;) {
+      for (int j = C - 1; j--;) {
+        ret[i, j] = (*this)[(i < row ? i : i + 1), (j < col ? j : j + 1)];
+      }
+    }
+    return ret;
+  }
+
+  auto det() const -> T
+    requires(R == C)
+  {
+    if constexpr (R == 1) {
+      return (*this)[0, 0];
+    } else {
+      T ret = 0;
+      for (int i = R; i--;) {
+        ret += (*this)[0, i] * cofactor(0, i);
+      }
+      return ret;
+    }
+  }
 };
 
 template <typename T, size_t D>
@@ -250,7 +354,23 @@ using vec2 = vector<T, 2>;
 template <typename T>
 using vec3 = vector<T, 3>;
 
+template <typename T>
+using vec4 = vector<T, 4>;
+
 using vec2f = vec2<float_t>;
 using vec3f = vec3<float_t>;
+using vec4f = vec4<float_t>;
 using vec2i = vec2<int32_t>;
 using vec3i = vec3<int32_t>;
+
+using mat2x2 = matrix<float_t, 2, 2>;
+using mat2x3 = matrix<float_t, 2, 3>;
+using mat2x4 = matrix<float_t, 2, 4>;
+
+using mat3x2 = matrix<float_t, 3, 2>;
+using mat3x3 = matrix<float_t, 3, 3>;
+using mat3x4 = matrix<float_t, 3, 4>;
+
+using mat4x2 = matrix<float_t, 4, 2>;
+using mat4x3 = matrix<float_t, 4, 3>;
+using mat4x4 = matrix<float_t, 4, 4>;
